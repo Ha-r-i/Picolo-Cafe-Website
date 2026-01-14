@@ -1,0 +1,166 @@
+.reservation-management {
+  max-width: 1400px;
+}
+
+.reservation-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input,
+.filter-select {
+  width: 100%;
+  padding: 0.8rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #8B4513;
+  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+}
+
+.reservations-table-container {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+}
+
+.reservations-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.reservations-table thead {
+  background: linear-gradient(135deg, #8B4513 0%, #d4a574 100%);
+  color: white;
+}
+
+.reservations-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.reservations-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.reservations-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.reservations-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.email {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.special-requests {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #666;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-confirmed {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-select {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #8B4513;
+}
+
+.empty-row {
+  text-align: center;
+  padding: 3rem;
+  color: #999;
+}
+
+.reservation-summary {
+  margin-top: 1.5rem;
+  text-align: right;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.loading-container {
+  text-align: center;
+  padding: 3rem;
+  color: #999;
+}
+
+@media (max-width: 768px) {
+  .reservation-filters {
+    flex-direction: column;
+  }
+
+  .reservations-table-container {
+    overflow-x: auto;
+  }
+
+  .reservations-table {
+    min-width: 800px;
+  }
+}

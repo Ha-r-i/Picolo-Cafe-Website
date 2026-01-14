@@ -1,0 +1,21 @@
+.admin-dashboard {
+  max-width: 1200px;
+}
+
+.dashboard-welcome {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  margin-top: 2rem;
+}
+
+.dashboard-welcome h2 {
+  color: #8B4513;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-welcome p {
+  color: #666;
+  font-size: 1.05rem;
+}
