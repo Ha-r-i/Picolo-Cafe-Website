@@ -4,7 +4,6 @@
   "description": "Piccolo Cafe Website - Indore",
   "private": true,
   "dependencies": {
-    "@supabase/supabase-js": "^2.90.1",
     "emailjs-com": "^3.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
