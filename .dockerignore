@@ -1,0 +1,12 @@
+.git
+node_modules
+.env*
+.local-db
+.local-backup
+Picolo-Cafe-Website
+build
+dist
+test-results
+playwright-report
+migration/private
+.firebase

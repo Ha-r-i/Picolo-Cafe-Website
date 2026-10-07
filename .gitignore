@@ -30,3 +30,14 @@ yarn-error.log*
 *.swo
 *~
 
+.local-backup/
+.local-db/
+.firebase/
+dist/
+test-results/
+playwright-report/
+*.export.json
+migration/private/
+.env.*
+!.env.example
+

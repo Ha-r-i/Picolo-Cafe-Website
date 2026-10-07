@@ -1,0 +1,42 @@
+{
+  "measured_at": "2026-10-07T22:00:25.753Z",
+  "environment": {
+    "os": "win32",
+    "architecture": "x64",
+    "cpu": "AMD Ryzen 9 5980HX with Radeon Graphics        ",
+    "logical_cpus": 16,
+    "memory_gib": 15,
+    "node": "v24.12.0",
+    "postgres": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+    "api_instances": 2,
+    "pool_per_instance": 10
+  },
+  "workload": {
+    "requests": 40,
+    "concurrency": 20,
+    "method": "HTTP on localhost; same 90-minute interval; one guest per request; capacity 8",
+    "auth": "guest only",
+    "limits": "disabled only in isolated test harness",
+    "email": "worker not measured"
+  },
+  "elapsed_ms": 771.2,
+  "latency_ms": {
+    "p50": 273.17,
+    "p95": 580.35,
+    "p99": 622.91
+  },
+  "http": {
+    "created": 8,
+    "expected_capacity_conflicts": 32,
+    "unexpected_errors": 0
+  },
+  "correctness": {
+    "passed": true,
+    "allocated_seats": 8,
+    "replay": 200,
+    "mismatch": 409,
+    "cancel": 200,
+    "replacement": 201
+  },
+  "limits": "Short local contention experiment. Does not establish production traffic capacity, sustained throughput, auth latency or Supabase network latency."
+}

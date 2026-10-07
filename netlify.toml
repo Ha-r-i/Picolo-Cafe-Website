@@ -2,6 +2,15 @@
   command = "npm run build"
   publish = "build"
 
+# Host API and worker separately; point VITE_API_URL at its HTTPS /api origin.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

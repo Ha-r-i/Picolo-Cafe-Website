@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import FunSection from './FunSection';
 import './Home.css';
+import Cafe_image from '../Assets/Picolo_cafe.png'
 
 const Home = () => {
   return (
@@ -61,12 +62,12 @@ const Home = () => {
                 </div>
               </div>
             </div>
-            <div className="about-image">
-              <div className="image-placeholder">
-                <p>Your Image Here</p>
-                <small>Replace with cafe interior image</small>
-              </div>
-            </div>
+            <img
+              src={Cafe_image}
+              alt="Piccolo Cafe Interior"
+              className="about-image-img"
+            />
+
           </div>
         </div>
       </section>

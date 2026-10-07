@@ -187,6 +187,14 @@
   margin: 0;
 }
 
+.about-image-img {
+  width: 100%;
+  height: auto;
+  border-radius: 15px;
+  display: block;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
 .about-image {
   position: relative;
   height: 500px;

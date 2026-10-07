@@ -1,25 +1,69 @@
 {
   "name": "piccolo-cafe-website",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Piccolo Cafe Website - Indore",
   "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "dependencies": {
-    "emailjs-com": "^3.2.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "react-scripts": "5.0.1"
+    "@fastify/cors": "^11.0.0",
+    "@fastify/helmet": "^13.0.0",
+    "@fastify/multipart": "^9.0.0",
+    "@supabase/supabase-js": "^2.99.0",
+    "dotenv": "^17.0.0",
+    "fastify": "^5.7.0",
+    "luxon": "^3.7.0",
+    "pg": "^8.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.4",
+    "sharp": "^0.35.5",
+    "zod": "^4.0.0"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "vite --host 127.0.0.1",
+    "dev": "concurrently -k \"npm:start\" \"npm:dev:api\"",
+    "dev:api": "tsx watch server/index.ts",
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "serve:api": "node dist/server/index.js",
+    "worker": "tsx server/worker.ts",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit",
+    "lint": "eslint src/app server shared scripts tests vite.config.ts",
+    "test": "vitest run tests/unit",
+    "test:db": "vitest run tests/integration --no-file-parallelism",
+    "test:embedded": "tsx scripts/test-embedded.ts",
+    "test:e2e": "playwright test",
+    "test:security": "tsx scripts/test-data-api.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:role": "tsx scripts/provision-role.ts",
+    "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
+    "migration:import": "tsx scripts/import-legacy.ts",
+    "migration:users": "tsx scripts/import-users.ts",
+    "migration:files": "tsx scripts/import-files.ts",
+    "load": "tsx scripts/load-test.ts",
+    "assets": "tsx scripts/optimize-assets.ts"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app"
-    ]
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.58.0",
+    "@types/luxon": "^3.7.0",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.0.0",
+    "embedded-postgres": "18.4.0-beta.17",
+    "eslint": "^9.0.0",
+    "prettier": "^3.9.9",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.0.0",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.0"
   },
   "browserslist": {
     "production": [
