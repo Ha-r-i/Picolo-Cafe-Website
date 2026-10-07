@@ -174,7 +174,7 @@ For a staff account, sign up and confirm a second user. Use the administrator's 
 
 The account page supports login, signup confirmation, logout, password-reset requests, changing a signed-in user's password and listing that user's reservations. A reset requires the configured mail link and redirect to return to the account page. Complete the reset with the Change password action after the recovery session is established.
 
-Auth operations depend on actual Supabase services. Their implementation exists, but the workspace verification did not establish a successful real Auth round trip; run the real-stack checks before relying on this for a demonstration.
+Auth operations depend on actual Supabase services. The Windows workspace lacked a running stack. Subsequent GitHub CI passed real Supabase account creation, password sign-in and server token verification. The full confirmation/reset browser journey still needs a manual acceptance check before your demonstration.
 
 ## 7. Try the visible workflows
 
@@ -256,10 +256,12 @@ $demoUrl = 'http://127.0.0.1:3001/api'
 $offer = Invoke-RestMethod "$demoUrl/availability?date=$demoDate&guests=1"
 $demoSlot = $offer.slots | Where-Object available | Select-Object -First 1
 if (-not $demoSlot) { throw 'No available slot; choose another date.' }
+$demoStart = [DateTimeOffset]::Parse($demoSlot.starts_at)
 $demoKey = [guid]::NewGuid().ToString()
 $demoBody = @{
   name='Interview Guest'; email='interview@example.test'
-  phone='9876543210'; guests=1; starts_at=$demoSlot.starts_at
+  phone='9876543210'; guests=1
+  starts_at=$demoStart.ToUniversalTime().ToString('o')
   notes='Local demo only'
 } | ConvertTo-Json
 $demoHeaders = @{ 'Idempotency-Key'=$demoKey }
@@ -272,6 +274,8 @@ $retry.replayed
 ```
 
 Both last outputs should be True. A different body with that same key receives 409; it must not create another booking. The load script also verifies this behavior automatically.
+
+Open `http://localhost:3000/reservation/BOOKING_ID#GUEST_TOKEN`, replacing BOOKING_ID with `$first.reservation.id` and GUEST_TOKEN with `$first.guest_token`, to inspect and cancel this demo booking. Convert the availability timestamp to ISO as shown above; the booking API validates the ISO format.
 
 ## 12. States, cancellation and stale edits
 
@@ -356,7 +360,7 @@ Integration tests cover last-seat contention across two API instances, overlap/a
 
 The recorded load experiment used two localhost APIs, 40 requests at concurrency 20, capacity eight and one guest/request. Eight bookings succeeded, 32 returned expected conflicts, zero had unexpected errors. p50 was 371 ms, p95 617 ms and p99 663 ms. Replay/mismatch/cancel/replacement checks passed. It was a short correctness experiment, not demonstrated production traffic capacity; Auth/network/provider throughput were excluded.
 
-After a real LOCAL Supabase stack is running, set TEST_SUPABASE_URL/public key/secret key to the same instance as both DB URLs, then run `npm run test:security`. It makes actual Auth, PostgREST and Storage HTTP access attempts. Missing credentials blocked this check in the recorded workspace. Real provider delivery was also unverified. Remote CI is configured, and its success is evidence only after the workflow actually runs. See `docs/verification.md` for the precise record.
+After a real LOCAL Supabase stack is running, set TEST_SUPABASE_URL/public key/secret key to the same instance as both DB URLs, then run `npm run test:security`. It makes actual Auth, PostgREST and Storage HTTP access attempts. Missing credentials blocked this check in the Windows workspace, but both jobs subsequently passed in [GitHub Actions run 37694825467](https://github.com/Ha-r-i/Picolo-Cafe-Website/actions/runs/37694825467) at commit a796aab. This includes real Auth sign-in/server verification, customer isolation, metadata escalation rejection, direct Data API/RPC/service-key write denial and direct Storage upload denial. Full confirmation/reset UI, successful staff Storage upload/public download and real provider delivery still need acceptance checks. See `docs/verification.md` for the precise record.
 
 ## 17. Troubleshoot by symptom
 
@@ -425,7 +429,7 @@ Practise answering why a seat-based model differs from table assignment; why pen
 5. What happens when staff edit the same version? Answer: one changes/increments it; the stale update is rejected.
 6. What if email fails after booking? Answer: the booking remains; durable outbox work retries or becomes visible as dead.
 7. Can a guest recover by entering the original email? Answer: no automatic ownership claim exists; the private token is required.
-8. What was not proven locally? Answer: real Supabase Auth/Storage/Data API behavior, provider delivery and production capacity.
+8. What still needs acceptance testing? Answer: the full confirmation/reset UI, successful staff Storage upload/public download, provider delivery and production capacity. Real Auth and direct-access denial checks passed in CI.
 
 ### A practical study sequence
 

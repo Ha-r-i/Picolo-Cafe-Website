@@ -32,4 +32,10 @@ Real notification-provider acceptance/domain delivery requires `RESEND_API_KEY` 
 
 The follow-up project handbook was rendered directly to a searchable 20-page PDF with 22 navigation bookmarks and four diagrams. Every page image was visually reviewed, and its text-boundary audit reported zero layout problems. Its setup instructions are based on the actual scripts/configuration; real-stack startup remains subject to the infrastructure limits above.
 
+## Subsequent GitHub verification
+
+[GitHub Actions run 37694825467](https://github.com/Ha-r-i/Picolo-Cafe-Website/actions/runs/37694825467) completed successfully for commit `a796aab8c9e87f8509e00be768bfcd87cd5c6a25`, with both `application` and `supabase-security` jobs passing on Ubuntu. The application job ran type checks, lint, unit/build/native database tests, Chromium desktop/mobile tests and the isolated load script. The security job started an actual local Supabase stack, provisioned the restricted runtime role, and passed real Auth account creation/password sign-in/server verification, customer isolation, user-metadata escalation rejection, direct Data API mutation/RPC/service-key bypass denial, customer staff denial, invalid-token rejection and direct customer Storage upload denial.
+
+This resolves the earlier infrastructure block for those checks in CI, not on this Windows machine. The suite does not exercise the complete signup-confirmation/password-reset browser journey, successful staff image upload/public download or real notification delivery. Those remain staging acceptance checks. The exact handbook PowerShell guest-booking/retry commands were additionally executed against an isolated native database; both same-ID and replay checks returned True, and fixture cleanup completed.
+
 The in-app browser automation tool failed before opening a page due to an environment metadata error. The project Playwright suite is used for independent automated Chromium desktop/mobile verification and screenshots. Initial attempts hit sandbox PostgreSQL/bundler restrictions and a missing Chromium binary; the required subprocess access and browser installation were subsequently provided.
