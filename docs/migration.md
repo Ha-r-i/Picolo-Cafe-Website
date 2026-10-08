@@ -19,7 +19,7 @@ $env:GOOGLE_ACCESS_TOKEN = 'SHORT_LIVED_OPERATOR_TOKEN'
 npx tsx scripts/export-firestore.ts --project piccolo-cafe-b9b2a
 ```
 
-It writes `migration/private/firestore.export.json` and prints collection counts, not personal data. The project ID is taken from the archived configuration; confirm it against the actual production owner before exporting. Independently back up Firestore through its official export workflow; the JSON helper is a relational transformation input, not a full disaster-recovery backup. Inventory collections outside the three implemented features rather than silently discarding them.
+It writes `migration/private/firestore.export.json` and prints collection counts, not personal data. The example project ID comes from the pre-upgrade configuration, available in Git history at commit `965f397`; confirm it against the actual production owner before exporting. The unused Firebase frontend/configuration are no longer in the active checkout. Independently back up Firestore through its official export workflow; the JSON helper is a relational transformation input, not a full disaster-recovery backup. Inventory collections outside the three implemented features rather than silently discarding them.
 
 ## Authentication: deliberately separate
 

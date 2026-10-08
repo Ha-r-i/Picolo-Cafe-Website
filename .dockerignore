@@ -8,5 +8,6 @@ build
 dist
 test-results
 playwright-report
+docs/verification
 migration/private
 .firebase

@@ -2,7 +2,7 @@
 
 A React and TypeScript cafe application with a Fastify API, Supabase Auth and Storage, and PostgreSQL-enforced reservations. The project starts as a modular monolith: one API deployment, one notification worker, one Supabase project.
 
-The upgrade branch is `upgrade/supabase-reliable-reservations`. No production data was migrated, no live deployment was changed, and the nested Git checkout was left untouched. Original UI edits and Firebase configuration are preserved in [migration/legacy](migration/legacy/README.md), with an additional ignored `.local-backup` snapshot.
+The upgrade branch is `upgrade/supabase-reliable-reservations`. No production data was migrated and no live deployment was changed. The unused Firebase frontend, duplicate nested checkout and hosting cache have been removed. Earlier source/configuration remain in Git history at commit `965f397`; local recovery archives under ignored `.local-backup` also preserve the earlier uncommitted edits. The active application is under `src/app` and `server`.
 
 ## What is implemented
 

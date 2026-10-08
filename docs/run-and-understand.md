@@ -31,9 +31,9 @@ git status --short
 git log -3 --oneline
 ```
 
-The active upgrade branch is `upgrade/supabase-reliable-reservations`. The new UI is under `src/app`, and the backend is under `server`. The earlier Firebase code and your earlier UI edits are preserved under `migration/legacy`. Open those only when comparing or migrating the old implementation.
+The active upgrade branch is `upgrade/supabase-reliable-reservations`. The UI is under `src/app`, and the backend is under `server`. The unused Firebase frontend has been removed. Its earlier source and configuration are available in Git history at commit `965f397` when comparing or preparing a migration.
 
-There is also a separate nested checkout named `Picolo-Cafe-Website`. Work in the root folder shown above. Its independent dirty checkout and the old Firebase hosting cache are not part of the upgrade commit.
+Work in the root folder shown above. The duplicate nested checkout and old Firebase hosting cache have been removed. Earlier uncommitted edits are saved in ignored `.local-backup` recovery archives. Generated reports, screenshots, builds and disposable test databases are recreated by their commands and kept out of version control.
 
 For a future clean clone after the branch has been published:
 
@@ -453,7 +453,7 @@ git diff --cached --stat
 git push -u origin upgrade/supabase-reliable-reservations
 ```
 
-If there is no upgrade commit, review and stage the intended upgrade files, then commit before pushing. Exclude `.env`, private exports, local databases/backups, the independent nested checkout and unrelated dirty hosting cache. Do not blindly stage every uncommitted file. After pushing, select the upgrade branch on GitHub. Merge into main only after review and required checks, particularly real Supabase checks. The old fixed commit URL will still display the old code.
+If there is no upgrade commit, review and stage the intended upgrade files, then commit before pushing. Exclude `.env`, private exports, local databases/backups and generated reports/builds. Review uncommitted changes before staging. After pushing, select the upgrade branch on GitHub. Merge into main only after review and required checks, particularly real Supabase checks. The old fixed commit URL will still display the old code.
 
 Official references for continued study:
 

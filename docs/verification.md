@@ -9,12 +9,12 @@ Workspace verification on 8 October 2026 (Asia/Kolkata), Windows x64, Node v24.1
 - Twenty-two database integration tests passed against a fresh native PostgreSQL 18.4 cluster, including import dry-run/rerun/source-drift checks, menu publishing authorization and disguised SVG rejection.
 - Fresh SQL migration validation rolled back cleanly; applying migrations and rerunning the migration runner succeeded. Seed reruns retained six labelled samples.
 - Twenty concurrent attempts across two independent Fastify instances/pools for the last seat produced exactly one success. Overlap/adjacency, duplicate-key races, changed key body/actor, cancellation capacity release, state/time/version rules, guest and cross-user access, role escalation, RLS/grants/service-role write bypass, durable limits, notification retry/lease recovery and bounded retry horizons passed.
-- Six Chromium browser tests passed across desktop and mobile: menu filters/search/empty state, real-database guest confirmation/cancellation, navigation and staff-access gating. The complete suite passed again after the final form and Windows fixture-cleanup changes, with no temporary PostgreSQL processes remaining. Screenshots in `docs/verification` were visually reviewed; the original cafe photo and wordmark remain, with responsive cream/green typography and layouts.
+- Six Chromium browser tests passed across desktop and mobile: menu filters/search/empty state, real-database guest confirmation/cancellation, navigation and staff-access gating. The complete suite passed again after the final form and Windows fixture-cleanup changes, with no temporary PostgreSQL processes remaining. Generated screenshots were visually reviewed; the original cafe photo and wordmark remain, with responsive cream/green typography and layouts. Screenshots are recreated under ignored `docs/verification` by the browser tests and retained as GitHub Actions artifacts.
 - Production dependency audit identified older router/image-library advisories during implementation; React Router 7.18.4 and sharp 0.35.5 were installed, and `npm audit --omit=dev` now reports zero vulnerabilities. This is advisory-registry evidence, not a guarantee that software has no undiscovered flaws.
 
 ## Measured local contention workload
 
-See [machine-readable report](verification/load-native.json). Command:
+The load command writes a fresh machine-readable report to ignored `docs/verification/load-native.json`; CI also retains it as a verification artifact. Command:
 
 ```powershell
 npm run load -- --native --requests 40 --concurrency 20
