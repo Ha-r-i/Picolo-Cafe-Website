@@ -1,7 +1,11 @@
 import 'dotenv/config';
 import pg from 'pg';
 export function adminPool(url = process.env.ADMIN_DATABASE_URL) {
-  if (!url) throw new Error('Set ADMIN_DATABASE_URL for this operator-only command.');
+  if (!url)
+    throw new Error(
+      'ADMIN_DATABASE_URL is missing from .env. This command needs the operator database connection. ' +
+        'For local development, start Supabase and run npm run setup:local first.',
+    );
   return new pg.Pool({
     connectionString: url,
     max: 2,

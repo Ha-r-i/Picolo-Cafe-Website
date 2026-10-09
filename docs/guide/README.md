@@ -9,6 +9,7 @@ From the repository root, with Python 3.10 or newer:
 ```powershell
 python -m pip install --target .local-backup/guide-python -r docs/guide/requirements.txt
 python docs/guide/build_guide.py
+python docs/guide/build_guide.py --beginner
 ```
 
 The builder loads dependencies from the ignored target directory, produces a
@@ -16,6 +17,10 @@ searchable PDF with bookmarks/table of contents, and renders every page at 150 d
 into `.local-backup/guide-render`. It also writes a text/layout audit there. Review
 each page image after content/layout changes; do not deliver unreviewed renders.
 The audit is supplementary and cannot establish visual quality on its own.
+
+`--beginner` uses `docs/beginner-guide.md`, writes
+`docs/Piccolo-Cafe-Beginner-Guide.pdf`, and renders into
+`.local-backup/beginner-render`. The default handbook remains a separate guide.
 
 The guide uses the documents skill's `compact_reference_guide` typography and
 Letter page geometry. The PDF-only request is rendered directly with ReportLab

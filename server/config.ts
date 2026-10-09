@@ -23,14 +23,16 @@ const configurationSchema = z.object({
 
 export type Config = z.infer<typeof configurationSchema>;
 
-export function readConfig(): Config {
-  const parsed = configurationSchema.safeParse(process.env);
+export function readConfig(environment: NodeJS.ProcessEnv = process.env): Config {
+  const parsed = configurationSchema.safeParse(environment);
 
   if (!parsed.success) {
     // Report field names only; environment values can contain passwords.
     const invalidFields = parsed.error.issues.map((issue) => issue.path.join('.'));
     throw new Error(
-      `Missing/invalid configuration: ${invalidFields.join(', ')}. See .env.example.`,
+      `Missing/invalid configuration: ${invalidFields.join(', ')}. ` +
+        'Put your settings in the root .env file, not .env.example. ' +
+        'For local development, follow docs/beginner-guide.md and run npm run setup:local.',
     );
   }
 
@@ -40,7 +42,10 @@ export function readConfig(): Config {
   const usesRuntimeRole = /^cafe_api(?:\.[a-z0-9-]+)?$/.test(databaseUsername);
 
   if (!usesRuntimeRole) {
-    throw new Error('DATABASE_URL must use restricted cafe_api role. Run npm run db:role.');
+    throw new Error(
+      'DATABASE_URL must use restricted cafe_api role. ' +
+        'For local development, run npm run setup:local; manual operator setup uses npm run db:role.',
+    );
   }
 
   return config;

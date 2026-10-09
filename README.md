@@ -22,6 +22,26 @@ Node.js 22.12 or later (verified on Node 24), npm, and Docker Desktop for the co
 
 ## Full local application
 
+If you are new to web development, start with the [beginner guide](docs/beginner-guide.md)
+and its [PDF](docs/Piccolo-Cafe-Beginner-Guide.pdf). It explains the tools, terminal,
+frontend/backend/database, expected results and troubleshooting from the beginning.
+With Docker Desktop running, use this automated local setup:
+
+```powershell
+npm ci
+npm run supabase:start
+npm run setup:local
+npm run doctor
+npm run dev
+```
+
+`setup:local` backs up an existing `.env`, reads real local Supabase credentials,
+generates missing secrets and provisions `cafe_api`. It refuses configured remote
+database/Supabase URLs. Keep the development terminal open and use
+<http://localhost:3000>. Restart `dev` after changing `.env`.
+For later sessions, start Docker, run `supabase:start`, `doctor`, then `dev`.
+The manual/operator setup below is an alternative; do not repeat it after the automated setup.
+
 1. Start Docker Desktop. Install dependencies and start a fresh local Supabase project:
 
    ```powershell
@@ -101,7 +121,9 @@ Use **one** migration owner: Supabase CLI or this runner. Do not apply the same 
 
 ## Documentation
 
-Start with the [20-page run-and-understand PDF](docs/Piccolo-Cafe-Run-and-Understand.pdf),
+Start with the [beginner guide and setup walkthrough](docs/beginner-guide.md)
+or its [PDF](docs/Piccolo-Cafe-Beginner-Guide.pdf) if you are new to full stack development.
+Then read the [20-page run-and-understand PDF](docs/Piccolo-Cafe-Run-and-Understand.pdf),
 or its [editable Markdown guide](docs/run-and-understand.md), for Windows setup,
 configuration, a guided code tour, workflow diagrams, troubleshooting and interview practice.
 

@@ -49,3 +49,40 @@ Type checks, lint, production build, eight unit tests, 23 native PostgreSQL inte
 The normal browser command found an existing development server on port 3000. The same suite then ran with temporary local configuration on ports 43100/43101 against its own database and API. The existing development server was not stopped and the normal project port configuration was not changed. Temporary test configuration, reports, exports, stopped test databases and build outputs were removed after verification. Local environment-file edits were preserved and excluded from the refactor commit.
 
 These browser tests cover guest flows and access gating, not real Supabase Auth/Storage HTTP. The separate CI security job and staging acceptance checks retain the scope described above. Start with [the junior developer walkthrough](junior-guide.md) for the refactored code structure.
+
+## Beginner setup repair: 9 October 2026
+
+The reported startup failure came from settings being placed in `.env.example` while `.env`
+contained no parseable environment settings. The API could not start, so the existing Vite
+server reported proxy connection failures on port 3001. Local Supabase was also absent.
+Both original environment files were preserved in ignored `.local-backup`; the usable local
+settings were moved to `.env` and the example restored to its shareable template.
+
+Supabase CLI 2.120.0 is now pinned as a development dependency. `supabase:start`,
+`supabase:stop`, `setup:local` and `doctor` provide a guided local workflow. The setup
+command captures local keys privately, backs up `.env`, generates missing secrets and
+provisions the restricted login. A separate guard check verified that a hosted database
+URL is rejected before writing configuration or connecting, without printing its password.
+Repeated setup preserved the runtime password and both HMAC secrets.
+`predev` checks configuration before launching frontend/API processes.
+
+On this Windows machine, Docker 29.6.1 started the real local Supabase stack successfully.
+All three existing migrations and the development seed applied. `setup:local` completed;
+`doctor` passed configuration, PostgreSQL/runtime-role/settings and Auth public-key checks.
+The actual API started on port 3001. Requests through the existing frontend proxy on port
+3000 returned HTTP 200 for readiness, menu (six seed items) and cafe settings.
+
+`npm run test:security` passed against this actual Windows local Supabase instance: real
+Auth/password sign-in, server token verification, customer isolation, metadata escalation
+rejection, staff authorization, Data API/RPC/service-key bypass denial and direct customer
+Storage upload denial. This resolves the earlier Windows infrastructure limit for those
+checks. Full browser signup/confirmation/reset, successful staff image upload and provider
+email delivery retain the acceptance scope described above.
+
+Type checks, lint, production build and all 11 unit tests passed, including three new
+configuration regression tests. The new [beginner guide](beginner-guide.md) was rendered
+to a searchable 13-page [PDF](Piccolo-Cafe-Beginner-Guide.pdf) with 15 chapter bookmarks
+and two diagrams. Every page was visually reviewed; the final audit reported zero text
+boundary or replacement-glyph problems. PDF dependencies/renders and temporary build
+outputs are excluded from Git. No application SQL migrations or production deployments
+were changed by this repair.

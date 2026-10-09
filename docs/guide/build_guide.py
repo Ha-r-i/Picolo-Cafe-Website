@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -212,25 +213,35 @@ def furniture(canvas, doc):
     canvas.setFillColor(MUTED)
     canvas.setFont(FONT, 8.5)
     if doc.page > 1:
-        canvas.drawString(72, 755, 'PICCOLO CAFE  /  PROJECT HANDBOOK')
+        label = 'BEGINNER GUIDE' if doc.beginner else 'PROJECT HANDBOOK'
+        canvas.drawString(72, 755, f'PICCOLO CAFE  /  {label}')
         canvas.drawRightString(540, 755, 'Run · Understand · Explain')
-    canvas.drawString(72, 37, 'Upgrade branch · 8 October 2026')
+    date = '9 October 2026' if doc.beginner else '8 October 2026'
+    canvas.drawString(72, 37, f'Upgrade branch · {date}')
     canvas.drawRightString(540, 37, f'Page {doc.page}')
     canvas.restoreState()
 
 
-def build_story(source):
+def build_story(source, beginner=False):
+    cover = ('Start here.<br/>Run the project.<br/>Learn how it works.' if beginner
+             else 'Run it.<br/>Understand it.<br/>Explain it.')
+    subtitle = ('A guide for your first full stack project<br/>Windows setup, explained step by step'
+                if beginner else 'A practical project handbook<br/>Windows setup + complete workflow tour')
     story = [Spacer(1, 30), p('PICCOLO CAFE', 'kicker'),
-             Paragraph('Run it.<br/>Understand it.<br/>Explain it.', STYLES['cover']),
-             Paragraph('A practical project handbook<br/>Windows setup + complete workflow tour', STYLES['subtitle'])]
+             Paragraph(cover, STYLES['cover']),
+             Paragraph(subtitle, STYLES['subtitle'])]
     photo = ROOT / 'public/images/cafe-1200.webp'
     if photo.exists():
         image = Image(str(photo), width=WIDTH, height=220, kind='proportional')
         image.hAlign = 'CENTER'
         story.extend([image, Spacer(1, 18)])
-    story.append(p('Built from the actual React, Fastify and Supabase upgrade. '
-                   'Includes setup commands, four diagrams, code paths, test evidence, '
-                   'troubleshooting and an interview study sequence.'))
+    introduction = ('No previous full stack experience required. Learn what the frontend, '
+                    'backend and database do, start the local application, create an account, '
+                    'and follow a request through the code.' if beginner else
+                    'Built from the actual React, Fastify and Supabase upgrade. '
+                    'Includes setup commands, four diagrams, code paths, test evidence, '
+                    'troubleshooting and an interview study sequence.')
+    story.append(p(introduction))
     story.append(p('Original production data and live deployment remain unchanged.', 'caption'))
     story.append(PageBreak())
     story.append(p('Contents', 'sub'))
@@ -323,16 +334,23 @@ def build_story(source):
 
 
 def main():
-    output = ROOT / 'docs/Piccolo-Cafe-Run-and-Understand.pdf'
-    source = (ROOT / 'docs/run-and-understand.md').read_text(encoding='utf-8')
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--beginner', action='store_true', help='Build the beginner guide instead of the handbook.')
+    arguments = parser.parse_args()
+    name = 'Beginner-Guide' if arguments.beginner else 'Run-and-Understand'
+    output = ROOT / f'docs/Piccolo-Cafe-{name}.pdf'
+    source_name = 'beginner-guide.md' if arguments.beginner else 'run-and-understand.md'
+    source = (ROOT / 'docs' / source_name).read_text(encoding='utf-8')
     doc = Handbook(str(output), pagesize=letter, leftMargin=72, rightMargin=72,
-                   topMargin=72, bottomMargin=72, title='Piccolo Cafe: Run and Understand',
+                   topMargin=72, bottomMargin=72, title=f'Piccolo Cafe: {name.replace("-", " ")}',
                    author='Piccolo Cafe project', subject='Setup, workflows and interview guide')
+    doc.beginner = arguments.beginner
     doc.addPageTemplates(PageTemplate(id='guide',
         frames=Frame(72, 72, WIDTH, 648, leftPadding=0, rightPadding=0,
                      topPadding=0, bottomPadding=0), onPage=furniture))
-    doc.multiBuild(build_story(source))
-    render_dir = ROOT / '.local-backup/guide-render'
+    doc.multiBuild(build_story(source, beginner=arguments.beginner))
+    render_name = 'beginner-render' if arguments.beginner else 'guide-render'
+    render_dir = ROOT / '.local-backup' / render_name
     render_dir.mkdir(parents=True, exist_ok=True)
     pdf = pymupdf.open(output)
     pages = []

@@ -2,6 +2,10 @@
 
 Windows setup and a practical guide to the implemented application.
 
+If you are starting with no web-development background, first follow `docs/beginner-guide.md`
+or `docs/Piccolo-Cafe-Beginner-Guide.pdf`. Its automated `setup:local` command replaces
+the manual credential/password copying in chapters 3-5 below.
+
 Prepared from the upgrade branch on 8 October 2026. Read this with the code open. The guide covers the implemented application, its operating requirements and its limits; it does not claim that the live cafe has been migrated.
 
 ## How to use this guide
