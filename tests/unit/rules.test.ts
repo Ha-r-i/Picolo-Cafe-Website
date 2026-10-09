@@ -5,7 +5,7 @@ import {
   validSlots,
   fingerprint,
   guestToken,
-} from '../../server/modules/reservations';
+} from '../../server/modules/booking-rules';
 import { safeError } from '../../server/errors';
 import { legacyStart, pricePaise } from '../../scripts/import-legacy';
 import type { CafeSettings } from '../../shared/types';
@@ -60,6 +60,36 @@ describe('booking boundary rules', () => {
     const result = safeError(new Error('password=secret host=internal'));
     expect(result.message).not.toContain('secret');
     expect(result.status).toBe(503);
+  });
+  it('handles malformed thrown values without crashing or exposing them', () => {
+    const failures = [
+      null,
+      undefined,
+      'password=secret',
+      { code: 123, message: { password: 'secret' } },
+      { message: 'constructor' },
+      { statusCode: '413' },
+    ];
+    for (const failure of failures) {
+      const result = safeError(failure);
+      expect(result.status).toBe(503);
+      expect(result.code).toBe('SERVICE_UNAVAILABLE');
+      expect(result.message).not.toContain('secret');
+    }
+  });
+  it('translates recognized database errors and upload limits to public responses', () => {
+    expect(safeError(new Error('CAPACITY_EXCEEDED'))).toMatchObject({
+      status: 409,
+      code: 'CAPACITY_EXCEEDED',
+    });
+    expect(safeError({ code: '23503', message: 'private constraint detail' })).toMatchObject({
+      status: 400,
+      code: 'INVALID_INPUT',
+    });
+    expect(safeError({ statusCode: 413 })).toMatchObject({
+      status: 413,
+      code: 'UPLOAD_TOO_LARGE',
+    });
   });
   it('translates exported local timestamps and currency without guessing invalid values', () => {
     expect(legacyStart('2026-10-08', '12:30 PM', 'Asia/Kolkata')).toBe('2026-10-08T07:00:00.000Z');

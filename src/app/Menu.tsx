@@ -10,9 +10,10 @@ export function Menu() {
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   const categories = useRemote<Category[]>('/categories');
-  const items = useRemote<Page<MenuItem>>(
-    `/menu?${new URLSearchParams({ page: String(page), pageSize: '12', q, ...(category ? { category } : {}), ...(dietary ? { dietary } : {}) })}`,
-  );
+  const parameters = new URLSearchParams({ page: String(page), pageSize: '12', q });
+  if (category) parameters.set('category', category);
+  if (dietary) parameters.set('dietary', dietary);
+  const items = useRemote<Page<MenuItem>>('/menu?' + parameters);
   return (
     <div className="container page">
       <div className="page-intro">

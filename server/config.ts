@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import { z } from 'zod';
-const schema = z.object({
+
+// Zod checks the environment once at startup and converts number strings.
+const configurationSchema = z.object({
   DATABASE_URL: z.url(),
   DATABASE_SSL: z.enum(['true', 'false']).default('false'),
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(20).default(5),
@@ -18,14 +20,28 @@ const schema = z.object({
   EMAIL_FROM: z.string().default(''),
   WORKER_POLL_MS: z.coerce.number().int().min(1000).default(5000),
 });
-export type Config = z.infer<typeof schema>;
+
+export type Config = z.infer<typeof configurationSchema>;
+
 export function readConfig(): Config {
-  const result = schema.safeParse(process.env);
-  if (!result.success)
+  const parsed = configurationSchema.safeParse(process.env);
+
+  if (!parsed.success) {
+    // Report field names only; environment values can contain passwords.
+    const invalidFields = parsed.error.issues.map((issue) => issue.path.join('.'));
     throw new Error(
-      `Missing/invalid configuration: ${result.error.issues.map((i) => i.path.join('.')).join(', ')}. See .env.example.`,
+      `Missing/invalid configuration: ${invalidFields.join(', ')}. See .env.example.`,
     );
-  if (!/^cafe_api(?:\.[a-z0-9-]+)?$/.test(new URL(result.data.DATABASE_URL).username))
+  }
+
+  const config = parsed.data;
+  const databaseUsername = new URL(config.DATABASE_URL).username;
+  // Supabase pooler usernames can have the form cafe_api.PROJECT_ID.
+  const usesRuntimeRole = /^cafe_api(?:\.[a-z0-9-]+)?$/.test(databaseUsername);
+
+  if (!usesRuntimeRole) {
     throw new Error('DATABASE_URL must use restricted cafe_api role. Run npm run db:role.');
-  return result.data;
+  }
+
+  return config;
 }

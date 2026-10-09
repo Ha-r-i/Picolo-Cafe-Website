@@ -21,6 +21,8 @@ test('guest booking uses real database, private confirmation and cancellation', 
   page,
 }) => {
   await page.goto('/booking');
+  // A damaged saved retry entry must not break submission of a valid booking.
+  await page.evaluate(() => sessionStorage.setItem('piccolo-booking-request', 'invalid-json'));
   const date = new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-CA', {
     timeZone: 'Asia/Kolkata',
   });

@@ -105,8 +105,11 @@ Start with the [20-page run-and-understand PDF](docs/Piccolo-Cafe-Run-and-Unders
 or its [editable Markdown guide](docs/run-and-understand.md), for Windows setup,
 configuration, a guided code tour, workflow diagrams, troubleshooting and interview practice.
 
+For a shorter introduction to the current code, read the [junior developer walkthrough](docs/junior-guide.md). It explains the API setup, one booking request, the smaller staff components, and the TypeScript syntax used here.
+
 | Document | What it explains |
 | --- | --- |
+| [Junior developer walkthrough](docs/junior-guide.md) | Reading order, code examples and common syntax |
 | [Inspection and architecture](docs/architecture.md) | Actual repository findings, boundaries and diagrams |
 | [System design](docs/system-design.md) | Transactions, capacity, retries, permissions and scaling |
 | [API](docs/api.md) | Routes, authentication, payloads and safe errors |

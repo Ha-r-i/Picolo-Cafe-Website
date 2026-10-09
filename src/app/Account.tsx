@@ -5,9 +5,41 @@ import { useAuth } from './Auth';
 import { supabase } from './api';
 import { Feedback, useRemote } from './hooks';
 import { formatVisit } from './Booking';
+type AuthMode = 'login' | 'signup' | 'reset' | 'password';
+
+const successMessages: Record<AuthMode, string> = {
+  login: 'You are signed in.',
+  signup: 'Check your email to confirm your account before signing in.',
+  reset: 'If that email belongs to an account, a reset link will arrive shortly.',
+  password: 'Password updated.',
+};
+
+async function authenticate(mode: AuthMode, email: string, password: string) {
+  if (!supabase) {
+    throw new Error('Account access is unavailable.');
+  }
+
+  switch (mode) {
+    case 'signup':
+      return supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${location.origin}/account` },
+      });
+    case 'reset':
+      return supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${location.origin}/account`,
+      });
+    case 'password':
+      return supabase.auth.updateUser({ password });
+    case 'login':
+      return supabase.auth.signInWithPassword({ email, password });
+  }
+}
+
 export function Account({ staff = false }: { staff?: boolean }) {
   const { session, role, loading, logout } = useAuth();
-  const [mode, setMode] = useState<'login' | 'signup' | 'reset' | 'password'>('login');
+  const [mode, setMode] = useState<AuthMode>('login');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -23,30 +55,11 @@ export function Account({ staff = false }: { staff?: boolean }) {
     setError('');
     setSuccess('');
     try {
-      const response =
-        mode === 'signup'
-          ? await supabase.auth.signUp({
-              email,
-              password,
-              options: { emailRedirectTo: `${location.origin}/account` },
-            })
-          : mode === 'reset'
-            ? await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${location.origin}/account`,
-              })
-            : mode === 'password'
-              ? await supabase.auth.updateUser({ password })
-              : await supabase.auth.signInWithPassword({ email, password });
-      if (response.error) throw response.error;
-      setSuccess(
-        mode === 'reset'
-          ? 'If that email belongs to an account, a reset link will arrive shortly.'
-          : mode === 'signup'
-            ? 'Check your email to confirm your account before signing in.'
-            : mode === 'password'
-              ? 'Password updated.'
-              : 'You are signed in.',
-      );
+      const response = await authenticate(mode, email, password);
+      if (response.error) {
+        throw response.error;
+      }
+      setSuccess(successMessages[mode]);
     } catch {
       setError('We could not complete that request. Check your details and try again.');
     } finally {

@@ -39,3 +39,13 @@ The follow-up project handbook was rendered directly to a searchable 20-page PDF
 This resolves the earlier infrastructure block for those checks in CI, not on this Windows machine. The suite does not exercise the complete signup-confirmation/password-reset browser journey, successful staff image upload/public download or real notification delivery. Those remain staging acceptance checks. The exact handbook PowerShell guest-booking/retry commands were additionally executed against an isolated native database; both same-ID and replay checks returned True, and fixture cleanup completed.
 
 The in-app browser automation tool failed before opening a page due to an environment metadata error. The project Playwright suite is used for independent automated Chromium desktop/mobile verification and screenshots. Initial attempts hit sandbox PostgreSQL/bundler restrictions and a missing Chromium binary; the required subprocess access and browser installation were subsequently provided.
+
+## Readability refactor: 9 October 2026
+
+Server startup and app setup now use named steps; booking helpers live in `server/modules/booking-rules.ts`, common validation in `server/validation.ts`, and routes use readable parameterized SQL. The staff screen delegates its tools to separate components under `src/app/staff`. Account actions use a switch and the booking form uses a named retry-key helper. Versioned SQL migrations and the database guarantees were not changed.
+
+Type checks, lint, production build, eight unit tests, 23 native PostgreSQL integration tests and six Chromium desktop/mobile tests passed. New regression coverage includes malformed error values, dashboard visit/notification totals and successful guest booking with a corrupt saved retry entry. The original booking concurrency, authorization, capacity, idempotency and worker-recovery checks still passed.
+
+The normal browser command found an existing development server on port 3000. The same suite then ran with temporary local configuration on ports 43100/43101 against its own database and API. The existing development server was not stopped and the normal project port configuration was not changed. Temporary test configuration, reports, exports, stopped test databases and build outputs were removed after verification. Local environment-file edits were preserved and excluded from the refactor commit.
+
+These browser tests cover guest flows and access gating, not real Supabase Auth/Storage HTTP. The separate CI security job and staging acceptance checks retain the scope described above. Start with [the junior developer walkthrough](junior-guide.md) for the refactored code structure.

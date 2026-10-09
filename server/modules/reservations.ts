@@ -1,182 +1,210 @@
-import { createHash, createHmac } from 'node:crypto';
-import { DateTime } from 'luxon';
 import { z } from 'zod';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { CafeSettings, Reservation } from '../../shared/types.js';
 import { statuses } from '../../shared/types.js';
 import type { Services } from '../services.js';
-import { actorFor, staffFor } from './auth.js';
+import { actorFor, requiredActorFor, staffFor } from './auth.js';
 import { AppError } from '../errors.js';
-export const bookingSchema = z
+import { idParams, pagination, searchPattern, uuid } from '../validation.js';
+import { bookingSchema, fingerprint, guestToken, tokenHash, validSlots } from './booking-rules.js';
+
+const availabilityQuery = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  guests: z.coerce.number().int().min(1).max(50),
+});
+
+const statusChange = z
   .object({
-    name: z.string().trim().min(2).max(100),
-    email: z
-      .email()
-      .max(254)
-      .transform((v) => v.toLowerCase()),
-    phone: z
-      .string()
-      .trim()
-      .regex(/^\+?[0-9 ()-]{7,20}$/),
-    starts_at: z.iso.datetime({ offset: true }).transform((v) => new Date(v).toISOString()),
-    guests: z.number().int().min(1).max(50),
-    notes: z.string().trim().max(1000).default(''),
-    website: z.string().max(0).optional(),
+    version: z.number().int().positive(),
+    status: z.enum(statuses),
   })
   .strict();
-export const pagination = z.object({
-  page: z.coerce.number().int().min(1).max(10000).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+
+const staffSearchQuery = pagination.extend({
+  status: z.enum(statuses).optional(),
+  q: z.string().max(100).default(''),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
-export const uuid = z.uuid();
-export const fingerprint = (input: unknown) =>
-  createHash('sha256').update(JSON.stringify(input)).digest('hex');
-export const guestToken = (secret: string, key: string, hash: string) =>
-  createHmac('sha256', secret).update(`${key}:${hash}`).digest('base64url');
-export const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
-export async function settings(db: Services['db']): Promise<CafeSettings> {
-  return (await db.query<CafeSettings>('select * from cafe_private.settings where id')).rows[0];
+
+export async function settings(database: Services['db']): Promise<CafeSettings> {
+  const result = await database.query<CafeSettings>('select * from cafe_private.settings where id');
+  return result.rows[0];
 }
-export function validSlots(s: CafeSettings, date: string, now: DateTime = DateTime.now()) {
-  const day = DateTime.fromISO(date, { zone: s.timezone });
-  if (
-    !day.isValid ||
-    day.toISODate() !== date ||
-    day.startOf('day') < now.setZone(s.timezone).startOf('day') ||
-    day > now.setZone(s.timezone).startOf('day').plus({ days: s.horizon_days })
-  )
-    return [];
-  const hours = s.opening_hours[String(day.weekday % 7)];
-  if (!hours) return [];
-  const close = DateTime.fromISO(`${date}T${hours.close}`, { zone: s.timezone });
-  const result: string[] = [];
-  for (
-    let t = DateTime.fromISO(`${date}T${hours.open}`, { zone: s.timezone });
-    t.plus({ minutes: s.duration_minutes }) <= close;
-    t = t.plus({ minutes: s.slot_minutes })
-  ) {
-    if (t >= now.plus({ minutes: s.lead_minutes })) result.push(t.toUTC().toISO()!);
+
+export async function accessibleReservation(
+  request: FastifyRequest,
+  id: string,
+  services: Services,
+): Promise<Reservation> {
+  const actor = await actorFor(request, services.db, services.verify);
+  const header = request.headers['x-booking-token'];
+  const token = typeof header === 'string' ? header : '';
+  if (token.length > 256) {
+    throw new AppError(404, 'NOT_FOUND', 'Reservation not found.');
   }
-  return result;
-}
-export async function accessibleReservation(req: FastifyRequest, id: string, s: Services) {
-  const actor = await actorFor(req, s.db, s.verify);
-  const token =
-    typeof req.headers['x-booking-token'] === 'string' ? req.headers['x-booking-token'] : '';
-  if (token.length > 256) throw new AppError(404, 'NOT_FOUND', 'Reservation not found.');
-  const { rows } = await s.db.query<Reservation>(
-    `select r.* from public.reservations r where r.id=$1 and
-    ($2::boolean or ($3::uuid is not null and r.user_id=$3) or exists(select 1 from cafe_private.guest_access g where g.reservation_id=r.id and g.token_hash=$4))`,
-    [id, actor && ['staff', 'admin'].includes(actor.role), actor?.id ?? null, tokenHash(token)],
+
+  const isStaff = actor?.role === 'staff' || actor?.role === 'admin';
+  const result = await services.db.query<Reservation>(
+    `select reservation.*
+     from public.reservations as reservation
+     where reservation.id = $1
+       and (
+         $2::boolean
+         or ($3::uuid is not null and reservation.user_id = $3)
+         or exists (
+           select 1 from cafe_private.guest_access as guest
+           where guest.reservation_id = reservation.id and guest.token_hash = $4
+         )
+       )`,
+    [id, isStaff, actor?.id ?? null, tokenHash(token)],
   );
-  if (!rows[0]) throw new AppError(404, 'NOT_FOUND', 'Reservation not found.');
-  return rows[0];
+
+  const reservation = result.rows[0];
+  if (!reservation) {
+    // Do not reveal whether another customer's reservation exists.
+    throw new AppError(404, 'NOT_FOUND', 'Reservation not found.');
+  }
+  return reservation;
 }
-export function reservationRoutes(app: FastifyInstance, s: Services) {
-  app.get('/api/settings', async () => settings(s.db));
-  app.get('/api/availability', async (req) => {
-    const { date, guests } = z
-      .object({
-        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        guests: z.coerce.number().int().min(1).max(50),
-      })
-      .parse(req.query);
-    const config = await settings(s.db);
-    const slots = validSlots(config, date);
-    if (guests > config.max_party_size) return { slots: [], timezone: config.timezone };
-    const { rows } = await s.db.query<{ starts_at: string; available: boolean }>(
-      `select t::text starts_at, cafe_private.peak_seats(t,t+make_interval(mins=>$2))+$3<=$4 available from unnest($1::timestamptz[]) t`,
-      [slots, config.duration_minutes, guests, config.capacity],
+
+export function reservationRoutes(app: FastifyInstance, services: Services) {
+  app.get('/api/settings', async () => settings(services.db));
+
+  app.get('/api/availability', async (request) => {
+    const query = availabilityQuery.parse(request.query);
+    const cafeSettings = await settings(services.db);
+    if (query.guests > cafeSettings.max_party_size) {
+      return { slots: [], timezone: cafeSettings.timezone };
+    }
+
+    const candidateSlots = validSlots(cafeSettings, query.date);
+    const result = await services.db.query<{ starts_at: string; available: boolean }>(
+      `select
+         slot::text as starts_at,
+         cafe_private.peak_seats(
+           slot, slot + make_interval(mins => $2)
+         ) + $3 <= $4 as available
+       from unnest($1::timestamptz[]) as slot`,
+      [candidateSlots, cafeSettings.duration_minutes, query.guests, cafeSettings.capacity],
     );
-    return { slots: rows, timezone: config.timezone };
+    return { slots: result.rows, timezone: cafeSettings.timezone };
   });
-  app.post('/api/reservations', async (req, reply) => {
-    const actor = await actorFor(req, s.db, s.verify);
-    const key = uuid.parse(req.headers['idempotency-key']);
-    const parsed = bookingSchema.parse(req.body);
-    const { website: _trap, ...data } = parsed;
-    void _trap;
-    const rate = s.bookingRateKeys(req, data.email);
-    const hash = fingerprint(data);
-    const token = guestToken(s.config.GUEST_TOKEN_SECRET, key, hash);
-    const { rows } = await s.db.query<{ result: { reservation: Reservation; replayed: boolean } }>(
-      'select cafe_private.create_booking($1,$2,$3,$4,$5,$6,$7) result',
-      [actor?.id ?? null, key, hash, tokenHash(token), data, rate?.ip ?? null, rate?.email ?? null],
-    );
-    const result = rows[0].result;
-    return reply
-      .code(result.replayed ? 200 : 201)
-      .send({ ...result, guest_token: actor ? undefined : token });
+
+  app.post('/api/reservations', async (request, reply) => {
+    const actor = await actorFor(request, services.db, services.verify);
+    const requestKey = uuid.parse(request.headers['idempotency-key']);
+    const input = bookingSchema.parse(request.body);
+
+    // Keep this order stable: the saved request fingerprint uses this JSON.
+    // The validated hidden website field is not reservation data.
+    const booking = {
+      name: input.name,
+      email: input.email,
+      phone: input.phone,
+      starts_at: input.starts_at,
+      guests: input.guests,
+      notes: input.notes,
+    };
+    const rateKeys = services.bookingRateKeys(request, booking.email);
+    const bookingHash = fingerprint(booking);
+    const privateToken = guestToken(services.config.GUEST_TOKEN_SECRET, requestKey, bookingHash);
+
+    // One database function checks capacity and saves the booking, audit,
+    // notification and retry result in the same transaction.
+    const databaseResult = await services.db.query<{
+      result: { reservation: Reservation; replayed: boolean };
+    }>('select cafe_private.create_booking($1, $2, $3, $4, $5, $6, $7) as result', [
+      actor?.id ?? null,
+      requestKey,
+      bookingHash,
+      tokenHash(privateToken),
+      booking,
+      rateKeys?.ip ?? null,
+      rateKeys?.email ?? null,
+    ]);
+    const result = databaseResult.rows[0].result;
+    const httpStatus = result.replayed ? 200 : 201;
+
+    return reply.code(httpStatus).send({
+      ...result,
+      guest_token: actor ? undefined : privateToken,
+    });
   });
-  app.get('/api/reservations/mine', async (req) => {
-    const actor = await actorFor(req, s.db, s.verify, true);
-    const { page, pageSize } = pagination.parse(req.query);
-    const { rows } = await s.db.query<Reservation>(
-      'select * from public.reservations where user_id=$1 order by starts_at desc,id limit $2 offset $3',
-      [actor!.id, pageSize, (page - 1) * pageSize],
+
+  app.get('/api/reservations/mine', async (request) => {
+    const actor = await requiredActorFor(request, services.db, services.verify);
+    const { page, pageSize } = pagination.parse(request.query);
+    const offset = (page - 1) * pageSize;
+    const reservations = await services.db.query<Reservation>(
+      `select * from public.reservations
+       where user_id = $1 order by starts_at desc, id limit $2 offset $3`,
+      [actor.id, pageSize, offset],
     );
-    const count = await s.db.query(
-      'select count(*)::integer total from public.reservations where user_id=$1',
-      [actor!.id],
+    const count = await services.db.query<{ total: number }>(
+      'select count(*)::integer as total from public.reservations where user_id = $1',
+      [actor.id],
     );
-    return { items: rows, page, pageSize, total: count.rows[0].total };
+    return { items: reservations.rows, page, pageSize, total: count.rows[0].total };
   });
-  app.get('/api/reservations/:id', async (req) =>
-    accessibleReservation(req, uuid.parse((req.params as { id: string }).id), s),
-  );
-  app.patch('/api/reservations/:id/status', async (req) => {
-    const actor = await actorFor(req, s.db, s.verify);
-    const id = uuid.parse((req.params as { id: string }).id);
-    const { version, status } = z
-      .object({ version: z.number().int().positive(), status: z.enum(statuses) })
-      .strict()
-      .parse(req.body);
-    const token = z
+
+  app.get('/api/reservations/:id', async (request) => {
+    const { id } = idParams.parse(request.params);
+    return accessibleReservation(request, id, services);
+  });
+
+  app.patch('/api/reservations/:id/status', async (request) => {
+    const actor = await actorFor(request, services.db, services.verify);
+    const { id } = idParams.parse(request.params);
+    const { version, status } = statusChange.parse(request.body);
+    const privateToken = z
       .string()
       .max(256)
-      .parse(req.headers['x-booking-token'] ?? '');
-    return (
-      await s.db.query('select cafe_private.change_booking($1,$2,$3,$4,$5) result', [
-        actor?.id ?? null,
-        tokenHash(token),
-        id,
-        version,
-        status,
-      ])
-    ).rows[0].result;
-  });
-  app.get('/api/admin/reservations', async (req) => {
-    await staffFor(req, s.db, s.verify);
-    const { page, pageSize, status, q, date } = pagination
-      .extend({
-        status: z.enum(statuses).optional(),
-        q: z.string().max(100).default(''),
-        date: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/)
-          .optional(),
-      })
-      .parse(req.query);
-    const where = `where ($1::text is null or status=$1) and ($2='' or name ilike $2 or email ilike $2 or phone ilike $2) and ($3::date is null or (starts_at at time zone (select timezone from cafe_private.settings))::date=$3)`;
-    const args = [status ?? null, q ? `%${q.replace(/[%_\\]/g, '\\$&')}%` : '', date ?? null];
-    const { rows } = await s.db.query(
-      `select * from public.reservations ${where} order by starts_at,id limit $4 offset $5`,
-      [...args, pageSize, (page - 1) * pageSize],
+      .parse(request.headers['x-booking-token'] ?? '');
+
+    const result = await services.db.query(
+      'select cafe_private.change_booking($1, $2, $3, $4, $5) as result',
+      [actor?.id ?? null, tokenHash(privateToken), id, version, status],
     );
-    const count = await s.db.query(
-      `select count(*)::integer total from public.reservations ${where}`,
-      args,
-    );
-    return { items: rows, page, pageSize, total: count.rows[0].total };
+    return result.rows[0].result;
   });
-  app.get('/api/reservations/:id/audit', async (req) => {
-    const id = uuid.parse((req.params as { id: string }).id);
-    await accessibleReservation(req, id, s);
-    return (
-      await s.db.query(
-        'select * from public.reservation_audit where reservation_id=$1 order by id',
-        [id],
-      )
-    ).rows;
+
+  app.get('/api/admin/reservations', async (request) => {
+    await staffFor(request, services.db, services.verify);
+    const { page, pageSize, status, q, date } = staffSearchQuery.parse(request.query);
+    const offset = (page - 1) * pageSize;
+    const filters = `
+      where ($1::text is null or status = $1)
+        and ($2 = '' or name ilike $2 or email ilike $2 or phone ilike $2)
+        and (
+          $3::date is null
+          or (starts_at at time zone (
+            select timezone from cafe_private.settings
+          ))::date = $3
+        )`;
+    const filterValues = [status ?? null, searchPattern(q), date ?? null];
+
+    const reservations = await services.db.query<Reservation>(
+      `select * from public.reservations ${filters}
+       order by starts_at, id limit $4 offset $5`,
+      [...filterValues, pageSize, offset],
+    );
+    const count = await services.db.query<{ total: number }>(
+      `select count(*)::integer as total from public.reservations ${filters}`,
+      filterValues,
+    );
+    return { items: reservations.rows, page, pageSize, total: count.rows[0].total };
+  });
+
+  app.get('/api/reservations/:id/audit', async (request) => {
+    const { id } = idParams.parse(request.params);
+    await accessibleReservation(request, id, services);
+    const result = await services.db.query(
+      'select * from public.reservation_audit where reservation_id = $1 order by id',
+      [id],
+    );
+    return result.rows;
   });
 }

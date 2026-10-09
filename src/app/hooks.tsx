@@ -12,17 +12,20 @@ export function useRemote<T>(path: string | null) {
     setData(null);
     setError('');
     setLoading(Boolean(path));
-    if (path)
-      void api<T>(path, { signal: controller.signal })
-        .then((value) => {
-          if (active) setData(value);
-        })
-        .catch((e: Error) => {
-          if (active) setError(e.message);
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
+    async function loadData() {
+      if (!path) return;
+      try {
+        const value = await api<T>(path, { signal: controller.signal });
+        if (active) setData(value);
+      } catch (error) {
+        if (active) setError((error as Error).message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void loadData();
+
+    // Ignore an old response after navigation, unmounting or a newer request.
     return () => {
       active = false;
       controller.abort();

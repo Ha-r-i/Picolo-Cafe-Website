@@ -19,6 +19,35 @@ function today(timezone: string) {
     day: '2-digit',
   }).format(new Date());
 }
+interface SavedBookingRequest {
+  payload: string;
+  key: string;
+  scope: string;
+}
+
+function requestKeyFor(payload: string, scope: string): string {
+  let previous: SavedBookingRequest | null = null;
+  try {
+    const stored = sessionStorage.getItem('piccolo-booking-request');
+    previous = JSON.parse(stored ?? 'null') as SavedBookingRequest | null;
+  } catch {
+    // A corrupt saved entry must not prevent someone from using the form.
+  }
+
+  let key: string = crypto.randomUUID();
+  if (previous) {
+    const hasMatchingDetails = previous.payload === payload && previous.scope === scope;
+    if (hasMatchingDetails && typeof previous.key === 'string') {
+      key = previous.key;
+    }
+  }
+
+  // Save before sending. If the connection fails, unchanged retries reuse the key.
+  const savedRequest: SavedBookingRequest = { payload, key, scope };
+  sessionStorage.setItem('piccolo-booking-request', JSON.stringify(savedRequest));
+  return key;
+}
+
 export function Booking() {
   const config = useRemote<CafeSettings>('/settings');
   const { session } = useAuth();
@@ -52,19 +81,10 @@ export function Booking() {
     };
     const payload = JSON.stringify(data);
     const scope = session?.user.id ?? 'guest';
-    const previous = JSON.parse(sessionStorage.getItem('piccolo-booking-request') ?? 'null') as {
-      payload: string;
-      key: string;
-      scope: string;
-    } | null;
-    const key =
-      previous?.payload === payload && previous.scope === scope
-        ? previous.key
-        : crypto.randomUUID();
-    sessionStorage.setItem('piccolo-booking-request', JSON.stringify({ payload, key, scope }));
     setBusy(true);
     setError('');
     try {
+      const key = requestKeyFor(payload, scope);
       setResult(
         await api('/reservations', {
           method: 'POST',
@@ -306,6 +326,7 @@ export function ManageBooking() {
     void load();
   }, [id]);
   async function cancel() {
+    if (!reservation) return;
     setBusy(true);
     setError('');
     try {
@@ -313,7 +334,7 @@ export function ManageBooking() {
         await api(`/reservations/${id}/status`, {
           method: 'PATCH',
           headers: { 'X-Booking-Token': token },
-          body: JSON.stringify({ version: reservation!.version, status: 'cancelled' }),
+          body: JSON.stringify({ version: reservation.version, status: 'cancelled' }),
         }),
       );
     } catch (e) {

@@ -1,16 +1,31 @@
-import { readConfig } from './config.js';
-import { makePool } from './db.js';
 import { buildApp } from './app.js';
-const config = readConfig();
-const db = makePool(config);
-const role = (await db.query('select current_user')).rows[0].current_user;
-if (role !== 'cafe_api') throw new Error('Runtime database role must be cafe_api.');
-const app = await buildApp(config, db);
-db.on('error', (err) =>
-  app.log.error({ code: (err as { code?: string }).code }, 'Idle database connection failed'),
-);
-await app.listen({ port: config.PORT, host: config.HOST });
-for (const signal of ['SIGINT', 'SIGTERM'] as const)
-  process.on(signal, () => {
-    void app.close().then(() => db.end());
+import { readConfig } from './config.js';
+import { assertRuntimeRole, makePool } from './db.js';
+import { errorCode } from './errors.js';
+
+// Startup is intentionally separate from app.ts so tests can build an API
+// without opening an HTTP port or reading real environment variables.
+async function startServer() {
+  const config = readConfig();
+  const database = makePool(config);
+
+  await assertRuntimeRole(database);
+  const app = await buildApp(config, database);
+
+  database.on('error', (error) => {
+    app.log.error({ code: errorCode(error) }, 'Idle database connection failed');
   });
+
+  await app.listen({ port: config.PORT, host: config.HOST });
+
+  async function shutdown() {
+    // Stop accepting requests before closing their database connections.
+    await app.close();
+    await database.end();
+  }
+
+  process.once('SIGINT', () => void shutdown());
+  process.once('SIGTERM', () => void shutdown());
+}
+
+await startServer();

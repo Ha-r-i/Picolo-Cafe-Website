@@ -327,6 +327,65 @@ describe('fresh database and atomic booking rules', () => {
   });
 });
 describe('authorization and direct database access', () => {
+  it('reports cafe-local visit totals and notification counts only to staff', async () => {
+    const today = DateTime.now().setZone('Asia/Kolkata').startOf('day');
+    const visits = [
+      { guests: 1, status: 'pending', starts: today.set({ hour: 10 }) },
+      { guests: 2, status: 'confirmed', starts: today.set({ hour: 12 }) },
+      { guests: 3, status: 'seated', starts: today.set({ hour: 15 }) },
+      { guests: 4, status: 'completed', starts: today.set({ hour: 17 }) },
+      { guests: 1, status: 'pending', starts: today.plus({ days: 1 }).set({ hour: 10 }) },
+    ];
+    // Operator-created fixtures cover historical/current states without depending
+    // on whether the cafe is open at the instant this test runs.
+    for (const visit of visits) {
+      await owner.query(
+        `insert into public.reservations
+         (name, email, phone, starts_at, ends_at, guests, status)
+         values ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          'Metrics Guest',
+          'metrics@example.test',
+          '9876543210',
+          visit.starts.toUTC().toISO(),
+          visit.starts.plus({ minutes: 90 }).toUTC().toISO(),
+          visit.guests,
+          visit.status,
+        ],
+      );
+    }
+    // Operator fixtures suppress mail. Use actual API bookings for outbox totals.
+    expect((await create()).statusCode).toBe(201);
+    expect((await create()).statusCode).toBe(201);
+    await owner.query(
+      `update cafe_private.notification_outbox set status = 'dead'
+       where id = (select id from cafe_private.notification_outbox order by id limit 1)`,
+    );
+    expect((await app.inject({ url: '/api/admin/metrics' })).statusCode).toBe(401);
+    expect(
+      (
+        await app.inject({
+          url: '/api/admin/metrics',
+          headers: { Authorization: 'Bearer customer' },
+        })
+      ).statusCode,
+    ).toBe(403);
+    const response = await app.inject({
+      url: '/api/admin/metrics',
+      headers: { Authorization: 'Bearer staff' },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      total_reservations: 7,
+      pending: 4,
+      visits_today: 3,
+      guests_today: 6,
+      failed_notifications: 1,
+      queued_notifications: 1,
+    });
+    const publicMenu = await app.inject({ url: '/api/menu' });
+    expect(response.json().published_items).toBe(publicMenu.json().total);
+  });
   it('authorizes menu publishing and protects stale content edits', async () => {
     const category = await app.inject({
       method: 'POST',
