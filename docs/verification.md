@@ -86,3 +86,29 @@ and two diagrams. Every page was visually reviewed; the final audit reported zer
 boundary or replacement-glyph problems. PDF dependencies/renders and temporary build
 outputs are excluded from Git. No application SQL migrations or production deployments
 were changed by this repair.
+
+## Dependency security update: 9 October 2026
+
+The initial audit reported 12 affected development packages (two moderate, six high,
+four critical); the production-only audit reported zero. Updated development packages
+and their transitive dependencies resolved the advisories. ESLint 9.39.5 was replaced with supported ESLint
+10.12.0 and `@eslint/js` 10.0.1; Vitest 3.2.7 was replaced with patched Vitest 5.0.3.
+The TypeScript ESLint dependency range now starts at 8.71.1, which supports ESLint 10.
+Concurrently resolved to 9.2.5 with shell-quote 1.12.0. Runtime dependency versions
+did not change.
+
+Compatibility references: [ESLint version support](https://eslint.org/version-support/),
+[TypeScript ESLint dependency versions](https://typescript-eslint.io/users/dependency-versions/)
+and the [Vitest 5 migration guide](https://vitest.dev/guide/migration/).
+
+A clean `npm ci` completed with no ESLint deprecation warning and zero audit
+vulnerabilities. `npm audit --audit-level=moderate` also passed; CI now runs that same
+check. Funding notices are informational. The dependency engine range now reflects
+the tools' supported Node versions; Node 24 is recommended, with Node 22.13+ on 22.x
+also supported. README, both guide sources and both PDFs reflect the revised requirement.
+
+Type checks, ESLint, production build, 11 unit tests, 23 isolated native PostgreSQL
+integration tests and six desktop/mobile browser tests passed with the updated tools.
+PDFs retained their 13/20 pages and 15/22 bookmarks, with zero layout audit problems.
+Raster comparison confirmed that 31 pages exactly match their previously reviewed
+renders; the two changed requirements pages were freshly inspected and were clean.

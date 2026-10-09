@@ -72,7 +72,7 @@ This is a modular monolith: one backend codebase with auth, menu, reservation, a
 
 Use the full Supabase setup for login, staff tools and image uploads. The credential-free tests exercise guest workflows with real PostgreSQL, but they do not provide working Supabase Auth, Storage HTTP or the Data API.
 
-Install Node.js 22.12 or newer; Node 24 was used for verification. Install Git and Docker Desktop. Start Docker Desktop and wait until its engine is running. The Supabase CLI uses Docker to run local services. The first startup downloads several images and can take time.
+Install Node.js 24 (recommended), or Node 22.13+ on the 22.x line. Node 24 was used for verification. Install Git and Docker Desktop. Start Docker Desktop and wait until its engine is running. The Supabase CLI uses Docker to run local services. The first startup downloads several images and can take time.
 
 Check tools in a PowerShell terminal in the root repository:
 
@@ -86,7 +86,7 @@ npx supabase start
 npx supabase status
 ```
 
-Expected result: dependency installation finishes, Docker responds, and Supabase reports local URLs and keys. On first use, npx may ask to download the Supabase CLI package. Node 22.12+ is required by the chosen tooling, not just by the application syntax.
+Expected result: dependency installation finishes, Docker responds, and Supabase reports local URLs and keys. On first use, npx may ask to download the Supabase CLI package. Node 24 or Node 22.13+ on 22.x is required by the chosen tooling, not just by the application syntax.
 
 The CLI applies the versioned migrations and development seed on a fresh local stack. Do not then replay the same migrations with the independent `db:migrate` runner. Use one migration owner per database.
 

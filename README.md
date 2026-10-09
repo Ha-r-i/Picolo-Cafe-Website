@@ -18,7 +18,13 @@ There is no MongoDB in the inspected application. Firebase, Cloudinary and Email
 
 ## Requirements
 
-Node.js 22.12 or later (verified on Node 24), npm, and Docker Desktop for the complete local Supabase stack. The native PostgreSQL tests and guest browser tests work without Docker. Native tests provide test-only Auth/Storage SQL shapes; they do **not** pretend to run Supabase Auth, Storage HTTP or PostgREST.
+Node.js 24 is recommended (and used for verification); Node 22.13+ on the 22.x line also meets the tooling requirements. Install npm and Docker Desktop for the complete local Supabase stack. The native PostgreSQL tests and guest browser tests work without Docker. Native tests provide test-only Auth/Storage SQL shapes; they do **not** pretend to run Supabase Auth, Storage HTTP or PostgREST.
+
+Stop the development terminal with Ctrl+C before rerunning `npm ci`; Windows can
+lock `esbuild.exe` while Vite or the API watcher is running. Use `npm audit` to
+check dependency advisories. CI checks all dependencies with
+`npm audit --audit-level=moderate`. The `npm fund` notice is optional information
+about supporting package maintainers.
 
 ## Full local application
 

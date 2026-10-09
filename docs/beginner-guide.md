@@ -47,7 +47,7 @@ If the CLI prints a different mail or Studio address, use the address in npm run
 
 ## 3. First setup: tools and dependencies
 
-Install Node.js 22.12 or newer; Node 24 was used to verify this project. npm comes with Node.js. Install Docker Desktop for Windows and open it. Wait for the Docker engine to be running. Installing Docker and starting Docker are separate steps.
+Install Node.js 24 (recommended), or Node 22.13+ on the 22.x line. Node 24 was used to verify this project. npm comes with Node.js. Install Docker Desktop for Windows and open it. Wait for the Docker engine to be running. Installing Docker and starting Docker are separate steps.
 
 Official installers and local development references are listed at the end of this guide. If Docker reports missing WSL or virtualization, follow Docker's Windows installation instructions and restart Windows if the installer requests it.
 
