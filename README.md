@@ -16,6 +16,33 @@ The upgrade branch is `upgrade/supabase-reliable-reservations`. No production da
 
 There is no MongoDB in the inspected application. Firebase, Cloudinary and EmailJS are no longer runtime integrations. React remains the framework; Vite replaces the older Create React App build tooling so new client and server code can use current TypeScript tooling.
 
+## Page previews
+
+Screenshots show the running local application with development menu samples.
+Click an image to see it at full size. Account previews show the public sign-in
+page; private customer and staff records are not included.
+
+| Page | Desktop | Mobile |
+| --- | --- | --- |
+| Home | ![Home page on desktop](docs/screenshots/home-desktop.png) | ![Home page on mobile](docs/screenshots/home-mobile.png) |
+| Menu | ![Menu page on desktop](docs/screenshots/menu-desktop.png) | ![Menu page on mobile](docs/screenshots/menu-mobile.png) |
+| Reservations | ![Reservation form on desktop](docs/screenshots/booking-desktop.png) | ![Reservation form on mobile](docs/screenshots/booking-mobile.png) |
+| Account | ![Account sign-in on desktop](docs/screenshots/account-desktop.png) | ![Account sign-in on mobile](docs/screenshots/account-mobile.png) |
+
+To refresh these images, start the full local application with `npm run dev`,
+then run `npm run screenshots` in another terminal. Chromium must be installed
+using `npx playwright install chromium` once. Capture only development data.
+
+## Live deployment
+
+The upgraded application has **not been deployed yet**. The current `.env`
+connects to local Supabase, and hosted database and hosting account access are
+still required. No verified live website or API URL is available to publish here.
+
+Full deployment includes the frontend, API, hosted Supabase Auth/database/Storage,
+and email worker. Follow the [deployment walkthrough](docs/deployment.md).
+Verified website and API links will be added here after deployment and live checks.
+
 ## Requirements
 
 Node.js 24 is recommended (and used for verification); Node 22.13+ on the 22.x line also meets the tooling requirements. Install npm and Docker Desktop for the complete local Supabase stack. The native PostgreSQL tests and guest browser tests work without Docker. Native tests provide test-only Auth/Storage SQL shapes; they do **not** pretend to run Supabase Auth, Storage HTTP or PostgREST.

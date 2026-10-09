@@ -43,4 +43,5 @@ playwright-report/
 migration/private/
 .env.*
 !.env.example
+env_notepad
 

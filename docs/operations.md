@@ -1,5 +1,7 @@
 # Operations and deployment
 
+Start with the [step-by-step deployment walkthrough](deployment.md) for hosted setup.
+
 ## Environment and secret boundaries
 
 `.env.example` is the complete reference. Preserve the existing developer `.env` before replacing it; its Cloudinary entries are unused by the new app. Vite exposes only `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `VITE_API_URL`. The API receives Supabase URL/public/secret keys, the restricted `DATABASE_URL`, stable HMAC secrets, CORS origin, proxy trust, pool sizing and log level. Only operator scripts receive `ADMIN_DATABASE_URL` or `CAFE_API_PASSWORD`. Do not set either in the API/worker host's environment.
