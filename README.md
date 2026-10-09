@@ -1,50 +1,176 @@
-# Piccolo Cafe Website
+# Piccolo Cafe
 
-Welcome to the official repository for the Piccolo Cafe website. This project is a modern, dynamic web application built to serve the customers of Piccolo Cafe in Indore.
+A React and TypeScript cafe application with a Fastify API, Supabase Auth and Storage, and PostgreSQL-enforced reservations. The project starts as a modular monolith: one API deployment, one notification worker, one Supabase project.
 
-## Live Demo
+The upgrade branch is `upgrade/supabase-reliable-reservations`. No production data was migrated and no live deployment was changed. The unused Firebase frontend, duplicate nested checkout and hosting cache have been removed. Earlier source/configuration remain in Git history at commit `965f397`; local recovery archives under ignored `.local-backup` also preserve the earlier uncommitted edits. The active application is under `src/app` and `server`.
 
--   **Customer Website:** [https://piccolo-cafe-b9b2a.web.app](https://piccolo-cafe-b9b2a.web.app)
--   **Admin Dashboard:** [https://piccolo-cafe-b9b2a.web.app/admin/login](https://piccolo-cafe-b9b2a.web.app/admin/login)
+## What is implemented
 
-## Overview
+- Published menu browsing, category/search/dietary filters and pagination; clearly labelled development samples.
+- Guest and account reservations, live availability, private guest access, confirmation and cancellation.
+- Capacity checks across overlapping visits, a database lock shared across instances, atomic idempotency, authorized state transitions, optimistic versions and audit history.
+- Supabase email/password accounts, signup confirmation, password reset, server-verified sessions and customer/staff/admin roles.
+- Staff reservation search/status management, menu/category editing, restricted image uploads, real database metrics and notification failure visibility.
+- Durable transactional outbox, leased worker retries, fenced acknowledgements and provider idempotency.
+- SQL migrations, development seed, import/export utilities, CI, unit/database/browser tests and a measured local load script.
 
-This application serves two main purposes:
-1.  **Customer Facing:** A beautiful, responsive interface for customers to browse our menu, view our story, and make table reservations.
-2.  **Admin Management:** A secure dashboard for our team to update the menu in real-time, manage incoming reservations, and keep our offerings fresh.
+There is no MongoDB in the inspected application. Firebase, Cloudinary and EmailJS are no longer runtime integrations. React remains the framework; Vite replaces the older Create React App build tooling so new client and server code can use current TypeScript tooling.
 
-## Key Features
+## Page previews
 
--   **Live Menu:** Our digital menu is always up-to-date. We can change prices, descriptions, and images instantly.
--   **Table Reservations:** Customers can book a spot directly through the site.
--   **Mobile optimized:** The design looks great on any device.
--   **Fast & Secure:** Built with performance and security in mind using Firebase.
+Screenshots show the running local application with development menu samples.
+Click an image to see it at full size. Account previews show the public sign-in
+page; private customer and staff records are not included.
 
-## Technology Stack
+| Page | Desktop | Mobile |
+| --- | --- | --- |
+| Home | ![Home page on desktop](docs/screenshots/home-desktop.png) | ![Home page on mobile](docs/screenshots/home-mobile.png) |
+| Menu | ![Menu page on desktop](docs/screenshots/menu-desktop.png) | ![Menu page on mobile](docs/screenshots/menu-mobile.png) |
+| Reservations | ![Reservation form on desktop](docs/screenshots/booking-desktop.png) | ![Reservation form on mobile](docs/screenshots/booking-mobile.png) |
+| Account | ![Account sign-in on desktop](docs/screenshots/account-desktop.png) | ![Account sign-in on mobile](docs/screenshots/account-mobile.png) |
 
-We used a modern stack to ensure reliability and speed:
+To refresh these images, start the full local application with `npm run dev`,
+then run `npm run screenshots` in another terminal. Chromium must be installed
+using `npx playwright install chromium` once. Capture only development data.
 
--   **Frontend:** React.js
--   **Database & Auth:** Firebase (Firestore & Authentication)
--   **Hosting:** Firebase Hosting
--   **Assets:** Cloudinary for optimized image delivery
+## Live deployment
 
-## Setup & Running Locally
+The upgraded application has **not been deployed yet**. The current `.env`
+connects to local Supabase, and hosted database and hosting account access are
+still required. No verified live website or API URL is available to publish here.
 
-If you are a developer looking to work on this project:
+Full deployment includes the frontend, API, hosted Supabase Auth/database/Storage,
+and email worker. Follow the [deployment walkthrough](docs/deployment.md).
+Verified website and API links will be added here after deployment and live checks.
 
-1.  **Clone the repository**
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Environment Variables:**
-    Create a `.env` file in the root directory with the necessary API keys (Firebase & Cloudinary).
-4.  **Run the app:**
-    ```bash
-    npm start
-    ```
+## Requirements
 
-## License
+Node.js 24 is recommended (and used for verification); Node 22.13+ on the 22.x line also meets the tooling requirements. Install npm and Docker Desktop for the complete local Supabase stack. The native PostgreSQL tests and guest browser tests work without Docker. Native tests provide test-only Auth/Storage SQL shapes; they do **not** pretend to run Supabase Auth, Storage HTTP or PostgREST.
 
-Copyright © 2024 Piccolo Cafe. All rights reserved.
+Stop the development terminal with Ctrl+C before rerunning `npm ci`; Windows can
+lock `esbuild.exe` while Vite or the API watcher is running. Use `npm audit` to
+check dependency advisories. CI checks all dependencies with
+`npm audit --audit-level=moderate`. The `npm fund` notice is optional information
+about supporting package maintainers.
+
+## Full local application
+
+If you are new to web development, start with the [beginner guide](docs/beginner-guide.md)
+and its [PDF](docs/Piccolo-Cafe-Beginner-Guide.pdf). It explains the tools, terminal,
+frontend/backend/database, expected results and troubleshooting from the beginning.
+With Docker Desktop running, use this automated local setup:
+
+```powershell
+npm ci
+npm run supabase:start
+npm run setup:local
+npm run doctor
+npm run dev
+```
+
+`setup:local` backs up an existing `.env`, reads real local Supabase credentials,
+generates missing secrets and provisions `cafe_api`. It refuses configured remote
+database/Supabase URLs. Keep the development terminal open and use
+<http://localhost:3000>. Restart `dev` after changing `.env`.
+For later sessions, start Docker, run `supabase:start`, `doctor`, then `dev`.
+The manual/operator setup below is an alternative; do not repeat it after the automated setup.
+
+1. Start Docker Desktop. Install dependencies and start a fresh local Supabase project:
+
+   ```powershell
+   npm ci
+   npx supabase start
+   npx supabase status
+   ```
+
+   Supabase CLI applies `supabase/migrations` and the development seed to a fresh local stack. Use `localhost:3000` consistently for Auth redirects. Configure real email sending for staging; local emails are inspected in Supabase's local mail UI.
+
+2. Copy `.env.example` to `.env` **only after preserving your existing `.env`**. Fill the public/secret keys from `supabase status`. Browser values are exclusively `VITE_*`. Keep `DATABASE_URL`, `ADMIN_DATABASE_URL`, the Supabase secret and HMAC secrets on the server.
+
+3. Provision the restricted runtime login. Generate its password and both HMAC secrets using a cryptographic random generator, then set the same password in `DATABASE_URL`:
+
+   ```powershell
+   $env:CAFE_API_PASSWORD = 'YOUR_RANDOM_PASSWORD_AT_LEAST_24_CHARACTERS'
+   npm run db:role -- --apply
+   npm run dev
+   ```
+
+   Frontend: <http://localhost:3000>; API health: <http://127.0.0.1:3001/api/health/ready>. `npm start` starts only the frontend; `npm run dev:api` starts only the API. The API refuses an owner/superuser database URL.
+
+4. Sign up at `/account`, confirm the email, and obtain that user's UUID from local Supabase Studio. Bootstrap the **first** administrator using the operator database connection:
+
+   ```powershell
+   npm run admin:bootstrap -- --user-id VERIFIED_USER_UUID
+   npm run admin:bootstrap -- --user-id VERIFIED_USER_UUID --apply
+   ```
+
+   Bootstrap refuses unconfirmed users and a second bootstrap. Later role changes use the authenticated administrator's Team access screen. User metadata never controls roles.
+
+5. To send reservation emails, configure `RESEND_API_KEY` and a verified `EMAIL_FROM`, then start the worker separately:
+
+   ```powershell
+   npm run worker
+   ```
+
+   Missing email credentials do not undo bookings. The worker refuses to claim jobs until configured. The staff Notifications screen shows queued, processing, sent and failed events.
+
+## Checks without Supabase credentials
+
+```powershell
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm run test:embedded
+npx playwright install chromium
+npm run test:e2e
+npm run load -- --native --requests 40 --concurrency 20
+```
+
+`test:embedded` creates a fresh, isolated native PostgreSQL database and tests two API instances. `test:e2e` launches its own isolated database, guest API and Vite server on ports 3001/3000; stop your normal development servers first. It verifies desktop and mobile guest workflows and collects screenshots. Test clusters remain under ignored `.local-db`; no production target is accepted by the load script. Some restricted Windows environments need permission for the bundler or PostgreSQL subprocesses.
+
+After starting real local Supabase, set the `TEST_SUPABASE_*` variables to its URL/public key/secret key, and keep the operator/runtime DB URLs pointed at that same local instance:
+
+```powershell
+npm run test:security
+```
+
+This script uses actual Supabase Auth, Data API and Storage HTTP requests. It fails with an explicit blocked message when the infrastructure is absent. The CI security job provisions the real local Supabase stack.
+
+For an existing isolated database whose name contains `test`, use `TEST_DATABASE_URL` and `npm run test:db`. It needs the Supabase Auth/Storage schemas or the test bootstrap fixture on a brand-new plain PostgreSQL cluster. Never run the bootstrap fixture inside a real Supabase project.
+
+## Migrations and imports
+
+For an empty hosted staging database, the operator runner validates SQL in a rolled-back transaction and tracks checksums on application:
+
+```powershell
+npm run db:migrate
+npm run db:migrate -- --apply
+npm run db:seed
+npm run db:seed -- --apply
+```
+
+Use **one** migration owner: Supabase CLI or this runner. Do not apply the same migrations through both on the same project. Seeds are development samples; do not seed production. Both runners stop on validation failures. Existing data must be exported and imported separately using the procedures in [Migration and rollback](docs/migration.md).
+
+## Documentation
+
+Start with the [beginner guide and setup walkthrough](docs/beginner-guide.md)
+or its [PDF](docs/Piccolo-Cafe-Beginner-Guide.pdf) if you are new to full stack development.
+Then read the [20-page run-and-understand PDF](docs/Piccolo-Cafe-Run-and-Understand.pdf),
+or its [editable Markdown guide](docs/run-and-understand.md), for Windows setup,
+configuration, a guided code tour, workflow diagrams, troubleshooting and interview practice.
+
+For a shorter introduction to the current code, read the [junior developer walkthrough](docs/junior-guide.md). It explains the API setup, one booking request, the smaller staff components, and the TypeScript syntax used here.
+
+| Document | What it explains |
+| --- | --- |
+| [Junior developer walkthrough](docs/junior-guide.md) | Reading order, code examples and common syntax |
+| [Inspection and architecture](docs/architecture.md) | Actual repository findings, boundaries and diagrams |
+| [System design](docs/system-design.md) | Transactions, capacity, retries, permissions and scaling |
+| [API](docs/api.md) | Routes, authentication, payloads and safe errors |
+| [Migration and rollback](docs/migration.md) | Export/import, users, files, staging and cutover |
+| [Operations and deployment](docs/operations.md) | Environment, configuration, worker and hosting |
+| [Interview and demo guide](docs/interview.md) | Code paths, engineering explanations and walkthrough |
+| [Verification](docs/verification.md) | Passed checks, infrastructure limits and measured workload |
+
+Production deploys the static `build/` frontend and the API/worker separately. Netlify/Vercel configurations serve the frontend only. See operations for the API container and compiled worker command. No new caching infrastructure, payments, delivery, invented reviews or business metrics were added.

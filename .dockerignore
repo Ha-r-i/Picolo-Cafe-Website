@@ -1,0 +1,16 @@
+.git
+node_modules
+.env*
+env_notepad
+supabase/.temp
+supabase/.branches
+.local-db
+.local-backup
+Picolo-Cafe-Website
+build
+dist
+test-results
+playwright-report
+docs/verification
+migration/private
+.firebase

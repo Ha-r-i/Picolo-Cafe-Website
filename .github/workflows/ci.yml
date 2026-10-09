@@ -1,0 +1,54 @@
+name: Verify cafe
+on: [push, pull_request]
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm audit --audit-level=moderate
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:embedded
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run load -- --native --requests 40 --concurrency 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: verification, path: "docs/verification/\nplaywright-report/\ntest-results/" }
+  supabase-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - run: supabase start
+      - name: Configure local credentials and restricted runtime
+        shell: bash
+        run: |
+          supabase status -o env > /tmp/supabase.env
+          source /tmp/supabase.env
+          cat > .env <<EOF
+          SUPABASE_URL=$API_URL
+          SUPABASE_PUBLISHABLE_KEY=$ANON_KEY
+          SUPABASE_SECRET_KEY=$SERVICE_ROLE_KEY
+          TEST_SUPABASE_URL=$API_URL
+          TEST_SUPABASE_PUBLISHABLE_KEY=$ANON_KEY
+          TEST_SUPABASE_SECRET_KEY=$SERVICE_ROLE_KEY
+          ADMIN_DATABASE_URL=$DB_URL
+          DATABASE_URL=postgresql://cafe_api:ci-runtime-password-at-least-24@127.0.0.1:54322/postgres
+          GUEST_TOKEN_SECRET=ci-guest-secret-at-least-32-characters-long
+          RATE_LIMIT_SECRET=ci-limit-secret-at-least-32-characters-long
+          WEB_ORIGIN=http://localhost:3000
+          EOF
+          CAFE_API_PASSWORD=ci-runtime-password-at-least-24 npm run db:role -- --apply
+      - run: npm run test:security
+      - run: supabase stop
+        if: always()
